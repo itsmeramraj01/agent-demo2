@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wanderly — AI Travel Planner</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="logo">&#9992; Wanderly</div>
+    <nav>
+      <a href="#how-it-works">How it works</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1>Plan your next vacation with AI</h1>
+      <p>Tell us your travel style and budget — get destination ideas, flight estimates, and an itinerary in seconds.</p>
+      <button id="open-chat" class="cta-button">Start Planning</button>
+    </section>
+
+    <section id="how-it-works" class="how-it-works">
+      <h2>How it works</h2>
+      <div class="steps">
+        <div class="step"><span>1</span><p>Answer a few quick questions about your trip</p></div>
+        <div class="step"><span>2</span><p>Claude analyzes your preferences</p></div>
+        <div class="step"><span>3</span><p>Get destinations, flights, and an itinerary</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Powered by Claude (Anthropic API). Flight details are estimates, not live bookings.</p>
+  </footer>
+
+  <!-- Floating chat widget -->
+  <div id="chat-widget" class="chat-widget closed">
+    <div class="chat-header">
+      <span>&#128188; Travel Planner</span>
+      <button id="close-chat" aria-label="Close">&times;</button>
+    </div>
+    <div id="chat-messages" class="chat-messages"></div>
+    <form id="chat-form" class="chat-input-row">
+      <input id="chat-input" type="text" autocomplete="off" placeholder="Type your answer..." />
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <button id="chat-fab" class="chat-fab" aria-label="Open travel planner">&#9992;</button>
+
+  <script src="script.js"></script>
+</body>
+</html>
