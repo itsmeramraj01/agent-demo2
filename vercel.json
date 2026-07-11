@@ -1,0 +1,8 @@
+{
+  "framework": null,
+  "functions": {
+    "api/plan.py": {
+      "maxDuration": 60
+    }
+  }
+}

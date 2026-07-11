@@ -5,3 +5,6 @@ config.env
 __pycache__/
 *.pyc
 node_modules/
+
+.vercel
+.env*
