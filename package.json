@@ -1,0 +1,8 @@
+{
+  "name": "agent-demo2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "ingest": "node scripts/ingest_knowledge_base.mjs"
+  }
+}

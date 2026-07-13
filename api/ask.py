@@ -1,9 +1,8 @@
-"""Vercel serverless function powering the travel-planner chat widget.
+"""Vercel serverless function for free-form Wanderly policy questions.
 
-Ports the same prompt logic as agent-demo2.py (the terminal CLI version) so
-the website behaves identically, just driven by JSON instead of input().
-Claude can call the search_travel_policies tool (agent_core.py, rag.py) to
-pull from the Wanderly policy knowledge base when relevant.
+Lets the chat widget ask about cancellation, baggage, or insurance policies
+after an itinerary is generated. Claude answers using the
+search_travel_policies tool (agent_core.py, rag.py) instead of guessing.
 """
 
 import json
@@ -16,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import anthropic
 
-from agent_core import build_itinerary_prompt, run_agent
+from agent_core import run_agent
 
 
 class handler(BaseHTTPRequestHandler):
@@ -25,9 +24,14 @@ class handler(BaseHTTPRequestHandler):
         raw_body = self.rfile.read(content_length) if content_length else b"{}"
 
         try:
-            prefs = json.loads(raw_body or b"{}")
+            payload = json.loads(raw_body or b"{}")
         except json.JSONDecodeError:
             self._send_json(400, {"error": "Invalid JSON body."})
+            return
+
+        question = (payload.get("question") or "").strip()
+        if not question:
+            self._send_json(400, {"error": "Missing 'question'."})
             return
 
         api_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -38,7 +42,7 @@ class handler(BaseHTTPRequestHandler):
             return
 
         client = anthropic.Anthropic(api_key=api_key)
-        messages = [{"role": "user", "content": build_itinerary_prompt(prefs)}]
+        messages = [{"role": "user", "content": question}]
 
         try:
             reply = run_agent(client, messages)

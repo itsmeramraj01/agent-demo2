@@ -2,7 +2,9 @@
 
 Run from a terminal: python agent-demo2.py
 Collects vacation preferences interactively, then asks Claude to suggest
-destinations and flight options based on the answers.
+destinations and flight options based on the answers. Claude can also pull
+from the Wanderly policy knowledge base (cancellation, baggage, insurance)
+via an agentic tool-use loop - see agent_core.py and rag.py.
 """
 
 import os
@@ -12,20 +14,17 @@ from pathlib import Path
 from dotenv import load_dotenv
 import anthropic
 
-MODEL = "claude-opus-4-8"
-MAX_TOKENS = 4096
+from agent_core import build_itinerary_prompt, run_agent
 
 
-def load_api_key() -> str:
+def load_env() -> None:
     env_path = Path(__file__).resolve().parent / "config.env"
     load_dotenv(dotenv_path=env_path)
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key or api_key == "your_anthropic_api_key_here":
+    if not os.environ.get("ANTHROPIC_API_KEY") or os.environ["ANTHROPIC_API_KEY"] == "your_anthropic_api_key_here":
         sys.exit(
             f"ANTHROPIC_API_KEY is not set. Add it to {env_path} "
             "(get a key at https://console.anthropic.com/settings/keys)."
         )
-    return api_key
 
 
 def ask(prompt: str, default: str = "") -> str:
@@ -53,48 +52,24 @@ def collect_preferences() -> dict:
     return prefs
 
 
-def build_prompt(prefs: dict) -> str:
-    return f"""A traveler wants vacation guidance. Their details:
-
-- Departure city/airport: {prefs['origin']}
-- Number of travelers: {prefs['travelers']}
-- Trip length: {prefs['duration']}
-- Budget: {prefs['budget']}
-- Preferred travel dates/month: {prefs['travel_window']}
-- Vacation style: {prefs['vibe']}
-- Interests: {prefs['interests']}
-- Climate preference: {prefs['climate']}
-- Pace: {prefs['pace']}
-- Additional notes: {prefs['notes']}
-
-Based on this, please:
-1. Recommend 3 well-matched vacation destinations, each with a short rationale tied to their preferences.
-2. For each destination, suggest realistic flight options from their departure city (typical airlines/routing, approximate flight time, and a rough price range) - make clear these are estimates, not live bookings.
-3. Give a brief day-by-day style outline (or highlights) for the top recommendation.
-4. Flag any budget, timing, or logistical concerns worth considering.
-
-Keep the response well-organized with headers, concise but useful.
-"""
-
-
 def main() -> None:
-    api_key = load_api_key()
-    client = anthropic.Anthropic(api_key=api_key)
+    load_env()
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
     prefs = collect_preferences()
-    prompt = build_prompt(prefs)
+    messages = [{"role": "user", "content": build_itinerary_prompt(prefs)}]
 
     print("\nAsking Claude for vacation guidance...\n")
+    print(run_agent(client, messages))
 
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=MAX_TOKENS,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    for block in response.content:
-        if block.type == "text":
-            print(block.text)
+    print("\n--- Ask a follow-up about cancellations, baggage, or insurance ---")
+    print("(press Enter with no text to quit)\n")
+    while True:
+        question = ask("You")
+        if not question:
+            break
+        messages.append({"role": "user", "content": question})
+        print(f"\n{run_agent(client, messages)}\n")
 
 
 if __name__ == "__main__":

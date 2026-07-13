@@ -27,6 +27,9 @@ let step = 0;
 let answers = {};
 let started = false;
 let awaitingReply = false;
+let planDelivered = false;
+
+const RESTART_KEYWORDS = ["new trip", "start over", "restart", "plan another trip"];
 
 function openWidget() {
   widget.classList.remove("closed");
@@ -112,12 +115,45 @@ form.addEventListener("submit", (e) => {
     } else {
       submitToClaude();
     }
-  } else {
-    // Conversation already finished — treat any input as "plan another trip".
+  } else if (planDelivered) {
     addMessage(value || "(start over)", "user");
-    resetConversation();
+    if (RESTART_KEYWORDS.some((kw) => value.toLowerCase().includes(kw))) {
+      resetConversation();
+    } else if (value) {
+      askPolicyQuestion(value);
+    }
   }
 });
+
+async function askPolicyQuestion(question) {
+  awaitingReply = true;
+  input.disabled = true;
+  const loadingEl = addMessage("Checking our policies...", "loading");
+
+  try {
+    const res = await fetch("/api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    });
+
+    const data = await res.json();
+    loadingEl.remove();
+
+    if (!res.ok) {
+      addMessage(data.error || "Something went wrong. Please try again.", "error");
+    } else {
+      addMessage(renderReply(data.reply), "bot-html");
+    }
+  } catch (err) {
+    loadingEl.remove();
+    addMessage("Network error — could not reach the planner. Please try again.", "error");
+  } finally {
+    awaitingReply = false;
+    input.disabled = false;
+    input.focus();
+  }
+}
 
 async function submitToClaude() {
   awaitingReply = true;
@@ -138,7 +174,11 @@ async function submitToClaude() {
       addMessage(data.error || "Something went wrong. Please try again.", "error");
     } else {
       addMessage(renderReply(data.reply), "bot-html");
-      addMessage("Want to plan another trip? Type anything to start over.", "bot");
+      planDelivered = true;
+      addMessage(
+        "Have a question about cancellations, baggage, or insurance? Ask away — or type \"new trip\" to start over.",
+        "bot"
+      );
     }
   } catch (err) {
     loadingEl.remove();
@@ -153,5 +193,6 @@ async function submitToClaude() {
 function resetConversation() {
   step = 0;
   answers = {};
+  planDelivered = false;
   askCurrentQuestion();
 }

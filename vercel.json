@@ -2,7 +2,12 @@
   "framework": null,
   "functions": {
     "api/plan.py": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "{knowledge_base/**,rag.py,agent_core.py}"
+    },
+    "api/ask.py": {
+      "maxDuration": 60,
+      "includeFiles": "{knowledge_base/**,rag.py,agent_core.py}"
     }
   }
 }
