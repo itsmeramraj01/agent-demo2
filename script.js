@@ -30,6 +30,12 @@ let awaitingReply = false;
 let planDelivered = false;
 
 const RESTART_KEYWORDS = ["new trip", "start over", "restart", "plan another trip"];
+const POLICY_KEYWORDS = ["cancel", "refund", "baggage", "luggage", "insurance"];
+
+function looksLikePolicyQuestion(text) {
+  const lower = text.toLowerCase();
+  return POLICY_KEYWORDS.some((kw) => lower.includes(kw));
+}
 
 function openWidget() {
   widget.classList.remove("closed");
@@ -103,6 +109,15 @@ form.addEventListener("submit", (e) => {
   const value = input.value.trim();
   input.value = "";
 
+  // A cancellation/baggage/insurance question can be asked at any point in the
+  // conversation, not just after the itinerary is delivered — route it to the
+  // policy tool and resume wherever the user left off.
+  if (value && looksLikePolicyQuestion(value)) {
+    addMessage(value, "user");
+    askPolicyQuestion(value, { resumeOnboarding: step < QUESTIONS.length });
+    return;
+  }
+
   if (step < QUESTIONS.length) {
     const q = QUESTIONS[step];
     const finalValue = value || q.default;
@@ -125,7 +140,7 @@ form.addEventListener("submit", (e) => {
   }
 });
 
-async function askPolicyQuestion(question) {
+async function askPolicyQuestion(question, { resumeOnboarding = false } = {}) {
   awaitingReply = true;
   input.disabled = true;
   const loadingEl = addMessage("Checking our policies...", "loading");
@@ -152,6 +167,7 @@ async function askPolicyQuestion(question) {
     awaitingReply = false;
     input.disabled = false;
     input.focus();
+    if (resumeOnboarding) askCurrentQuestion();
   }
 }
 
