@@ -5,6 +5,8 @@ functions (api/plan.py, api/ask.py) so the itinerary prompt and the
 retrieval-augmented tool loop behave identically everywhere.
 """
 
+import traceback
+
 from rag import SEARCH_POLICIES_TOOL, search_policies
 
 MODEL = "claude-opus-4-8"
@@ -77,6 +79,7 @@ def run_agent(client, messages: list, system: str = PLANNER_SYSTEM_PROMPT) -> st
                 try:
                     result_text = search_policies(block.input.get("query", ""))
                 except Exception as exc:  # noqa: BLE001 - surface as a tool result, not a crash
+                    traceback.print_exc()
                     result_text = f"Policy lookup failed: {exc}"
             else:
                 result_text = f"Unknown tool: {block.name}"
