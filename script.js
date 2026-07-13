@@ -30,11 +30,23 @@ let awaitingReply = false;
 let planDelivered = false;
 
 const RESTART_KEYWORDS = ["new trip", "start over", "restart", "plan another trip"];
-const POLICY_KEYWORDS = ["cancel", "refund", "baggage", "luggage", "insurance"];
+const POLICY_KEYWORDS = [
+  "cancel", "refund", "baggage", "luggage", "insurance", "policy", "policies",
+  "claim", "fee", "coverage", "covered", "reimburse",
+];
+const QUESTION_STARTERS = [
+  "explain", "what", "how", "why", "tell me", "do you", "does", "can i",
+  "is there", "are there", "describe", "list", "which",
+];
 
+// The onboarding flow expects short answers (a city, a number, a vibe). Anything
+// that reads like a question or a policy topic should instead be routed to the
+// policy tool, wherever the user is in the flow, rather than captured as an answer.
 function looksLikePolicyQuestion(text) {
-  const lower = text.toLowerCase();
-  return POLICY_KEYWORDS.some((kw) => lower.includes(kw));
+  const lower = text.toLowerCase().trim();
+  if (POLICY_KEYWORDS.some((kw) => lower.includes(kw))) return true;
+  if (lower.endsWith("?")) return true;
+  return QUESTION_STARTERS.some((starter) => lower.startsWith(starter));
 }
 
 function openWidget() {
